@@ -1,0 +1,148 @@
+Loading data
+
+from pyspark.sql import SparkSession
+
+# Create a Spark session
+spark = SparkSession.builder.appName("CovidAnalysis").getOrCreate()
+
+# Specify the path to your CSV file
+file_path = "path/to/your/csvfile.csv"
+
+# Read the CSV file into a DataFrame
+covid_df = spark.read.csv(file_path, header=True, inferSchema=True)
+
+# Show the first few rows of the DataFrame
+covid_df.show()
+
+
+
+----------
+Total number of cases, deaths, recoveries, and critical cases:
+sql
+	Copy code
+	SELECT 
+		SUM(DeadCounter) AS TotalDeaths,
+		SUM(CaseCounter) AS TotalCases,
+		SUM(RecoveredCounter) AS TotalRecoveries,
+		SUM(CriticalCounter) AS TotalCriticalCases
+	FROM your_table_name;
+	
+Number of cases, deaths, recoveries, and critical cases for each date:
+	sql
+	Copy code
+	SELECT 
+		Date,
+		SUM(DeadCounter) AS DailyDeaths,
+		SUM(CaseCounter) AS DailyCases,
+		SUM(RecoveredCounter) AS DailyRecoveries,
+		SUM(CriticalCounter) AS DailyCriticalCases
+	FROM your_table_name
+	GROUP BY Date
+	ORDER BY Date DESC;
+
+Average number of cases, deaths, recoveries, and critical cases per day:
+	sql
+	Copy code
+	SELECT 
+		AVG(DeadCounter) AS AvgDeaths,
+		AVG(CaseCounter) AS AvgCases,
+		AVG(RecoveredCounter) AS AvgRecoveries,
+		AVG(CriticalCounter) AS AvgCriticalCases
+	FROM your_table_name;
+
+Days with the highest number of cases:
+	sql
+	Copy code
+	SELECT 
+		Date,
+		CaseCounter
+	FROM your_table_name
+	ORDER BY CaseCounter DESC
+	LIMIT 1;
+
+Days with the highest number of deaths:
+	sql
+	Copy code
+	SELECT 
+		Date,
+		DeadCounter
+	FROM your_table_name
+	ORDER BY DeadCounter DESC
+	LIMIT 1;	
+	
+--------
+from pyspark.sql import SparkSession
+
+# Create a Spark session
+spark = SparkSession.builder.appName("CovidAnalysis").getOrCreate()
+
+# Read the CSV file into a DataFrame
+file_path = "path/to/your/csvfile.csv"
+covid_df = spark.read.csv(file_path, header=True, inferSchema=True)
+
+Now, you can run queries using the DataFrame API:
+
+Total number of cases, deaths, recoveries, and critical cases:
+
+	python
+	Copy code
+	covid_df.agg({"DeadCounter": "sum", "CaseCounter": "sum", "RecoveredCounter": "sum", "CriticalCounter": "sum"}).show()
+
+Number of cases, deaths, recoveries, and critical cases for each date:
+
+	python
+	Copy code
+	covid_df.groupBy("Date").agg({"DeadCounter": "sum", "CaseCounter": "sum", "RecoveredCounter": "sum", "CriticalCounter": "sum"}).orderBy("Date", ascending=False).show()
+
+Average number of cases, deaths, recoveries, and critical cases per day:
+
+	python
+	Copy code
+	covid_df.agg({"DeadCounter": "avg", "CaseCounter": "avg", "RecoveredCounter": "avg", "CriticalCounter": "avg"}).show()
+
+Days with the highest number of cases:
+
+	python
+	Copy code
+	covid_df.select("Date", "CaseCounter").orderBy("CaseCounter", ascending=False).limit(1).show()
+
+Days with the highest number of deaths:
+
+	python
+	Copy code
+	covid_df.select("Date", "DeadCounter").orderBy("DeadCounter", ascending=False).limit
+	
+--------	
+Here are some PySpark queries related to dates that you can use on your COVID-19 dataset:
+
+Filter data for a specific date:
+
+
+	specific_date = "05-09-2021"
+	covid_df.filter(covid_df["Date"] == specific_date).show()
+	
+Filter data for a range of dates:
+
+
+	start_date = "01-09-2021"
+	end_date = "05-09-2021"
+	covid_df.filter((covid_df["Date"] >= start_date) & (covid_df["Date"] <= end_date)).show()
+	
+Number of cases, deaths, recoveries, and critical cases for each date, sorted by date:
+
+	
+	covid_df.groupBy("Date").agg({"DeadCounter": "sum", "CaseCounter": "sum", "RecoveredCounter": "sum", "CriticalCounter": "sum"}).orderBy("Date").show()
+
+Number of cases, deaths, recoveries, and critical cases per day, calculated as the difference from the previous day:
+	from pyspark.sql import Window
+	from pyspark.sql.functions import lag, col
+
+	windowSpec = Window().orderBy("Date")
+
+	covid_df.withColumn("DailyDeaths", col("DeadCounter") - lag("DeadCounter").over(windowSpec)) \
+			.withColumn("DailyCases", col("CaseCounter") - lag("CaseCounter").over(windowSpec)) \
+			.withColumn("DailyRecoveries", col("RecoveredCounter") - lag("RecoveredCounter").over(windowSpec)) \
+			.withColumn("DailyCriticalCases", col("CriticalCounter") - lag("CriticalCounter").over(windowSpec)) \
+			.show()	
+			
+			

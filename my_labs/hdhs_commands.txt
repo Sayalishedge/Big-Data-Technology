@@ -1,0 +1,37 @@
+Here are a few (of the almost 30) HDFS commands:
+-cat: display file content (uncompressed)
+-text: just like cat but works on compressed files
+-chgrp,-chmod,-chown: changes file permissions
+-put,-get,-copyFromLocal,-copyToLocal: copies files
+from the local file system to the HDFS and vice versa.
+-ls, -ls -R: list files/directories
+-mv,-moveFromLocal,-moveToLocal: moves files
+-stat: statistical info for any given file (block size, number of blocks,
+file type, etc.)
+-hdfs dfs -getmerge test /tmp/merged.txt:merge
+-hdfs dfs -D dfs.blocksize=1048576 -put data.txt data.txt:blocksize
+-hdfs fsck /user/root/data.txt
+-hdfs dfs –du :reports the number of bytes consumed by a file or directory.
+-hdfs dfs –df -h : command reports the file system’s total capacity, along
+with the current amount of free and used storage space.
+-hdfs dfsadmin –report can display status and usage information similar to the NameNode UI.
+
+Importing a Table in SQOOP
+sqoop import
+--connect jdbc:mysql://host/nyse
+--table StockPrices
+--target-dir /data/stockprice/
+--as-textfile
+
+sqoop import
+--connect jdbc:mysql://host/nyse
+--table StockPrices
+--columns StockSymbol,Volume,High,ClosingPrice
+--target-dir /data/dailyhighs/
+--as-textfile
+--split-by StockSymbol
+-m 10
+
+--query "SELECT * FROM StockPrices s
+WHERE s.Volume >= 1000000
+AND \$CONDITIONS"

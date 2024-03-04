@@ -1,0 +1,116 @@
+https://louisazhou.gitbook.io/notes/spark/data-cleaning-with-apache-spark
+
+Read data
+	voter_df = spark.read.csv('voterdata.csv')
+	
+LAZY PROCESSING
+	import pyspark.sql.functions as F
+	# Load the CSV file
+	aa_dfw_df = spark.read.format('csv').options(Header=True).load('file:///home/talentum/test-jupyter/P3/M1/SM2/2_Immutabilityandlazyprocessing/Dataset/AA_DFW_2018_Departures_Short.csv.gz')
+
+	# Add the airport column using the F.lower() method
+	aa_dfw_df = aa_dfw_df.withColumn('airport', F.lower(aa_dfw_df['Destination Airport']))
+
+	# Drop the Destination Airport column
+	aa_dfw_df = aa_dfw_df.drop(aa_dfw_df['Destination Airport'])
+
+	# Show the DataFrame
+	aa_dfw_df.show()	
+	
+PARQUET
+	Reading Parquet files
+		df = spark.read.format('parquet').load('filename.parquet')
+		df = spark.read.parquet('filename.parquet')
+
+	Writing Parquet files
+		df.write.format('parquet').save('filename.parquet')
+		df.write.parquet('filename.parquet')
+		
+		
+	Parquet and SQL
+	Parquet as backing stores for SparkSQL operations
+
+	flight_df = spark.read.parquet('flights.parquet')
+
+	flight_df.createOrReplaceTempView('flights')
+
+	short_flights_df = spark.sql('SELECT * FROM flights WHERE flightduration < 100')		
+	
+	-----
+	df1 = spark.read.format('csv').load('file:///home/talentum/test-jupyter/P3/M1/SM3/3_UnderstandingParquet/Dataset/AA_DFW_2017_Departures_Short.csv.gz') # AA_DFW_2017_Departures_Short.csv
+	df2 = spark.read.format('csv').load('file:///home/talentum/test-jupyter/P3/M1/SM3/3_UnderstandingParquet/Dataset/AA_DFW_2018_Departures_Short.csv.gz') # AA_DFW_2018_Departures_Short.csv
+
+	# View the row count of df1 and df2
+	print("df1 Count: %d" % df1.count())
+	print("df2 Count: %d" % df2.count())
+
+	# Combine the DataFrames into one
+	df3 = df1.union(df2)
+	df3 = df3.withColumnRenamed('_c3', 'flight_duration')
+
+	# Save the df3 DataFrame in Parquet format
+	df3.write.parquet('AA_DFW_ALL.parquet', mode='overwrite')
+
+	# Read the Parquet file into a new DataFrame and run a count
+	print(spark.read.parquet('AA_DFW_ALL.parquet').count())
+	----
+	
+DATAFRAME COLUMN OPERATIONS
+	# Return rows where name starts with "M"
+	voter_df.filter(voter_df.name.like('M%'))
+	# Return name and position only
+	voters = voter_df.select('name', 'position')
+	
+	Common DataFrame transformations
+	Filter / Where
+	voter_df.filter(voter_df.date > '1/1/2019') # or voter_df.where(...)
+
+	Select
+	voter_df.select(voter_df.name)
+
+	withColumn
+	voter_df.withColumn('year', voter_df.date.year)
+
+	drop
+	voter_df.drop('unused_column')
+	
+Filtering data
+	Remove nulls
+	Remove odd entries
+	Split data from combined sources
+	Negate with ~
+
+		voter_df.filter(voter_df['name'].isNotNull())
+		voter_df.filter(voter_df.date.year > 1800)
+		voter_df.where(voter_df['_c0'].contains('VOTE'))
+		voter_df.where(~ voter_df._c1.isNull())
+			
+Column string transformations
+	Contained in pyspark.sql.functions
+	import pyspark.sql.functions as F
+
+	Applied per column as transformation
+	voter_df.withColumn('upper', F.upper('name'))
+
+	Can create intermediary columns
+	voter_df.withColumn('splits', F.split('name', ' '))
+
+	Can cast to other types
+	voter_df.withColumn('year', voter_df['_c4'].cast(IntegerType()))			
+	
+
+Filtering column content with Python	
+	# Load the CSV file
+	voter_df = spark.read.format('csv').options(Header=True).load('file:///home/talentum/test-jupyter/P3/M2/SM1/1_DataFramecolumnoperations/Dataset//DallasCouncilVoters.csv.gz')
+
+	# Show the distinct VOTER_NAME entries
+	voter_df.select('VOTER_NAME').distinct().show(40, truncate=False)
+
+	# Filter voter_df where the VOTER_NAME is 1-20 characters in length
+	voter_df = voter_df.filter('length(VOTER_NAME) > 0 and length(VOTER_NAME) < 20')
+
+	# Filter out voter_df where the VOTER_NAME contains an underscore
+	voter_df = voter_df.filter(~ F.col('VOTER_NAME').contains('_'))
+
+	# Show the distinct VOTER_NAME entries again
+	voter_df.select('VOTER_NAME').distinct().show(40, truncate=False)	

@@ -1,0 +1,55 @@
+Basic RDD Actions
+	-.collect()
+	-.take()
+	-.first()
+	-.count()
+
+
+# Create an RDD from a list of words
+RDD = sc.parallelize(["Spark", "is", "a", "framework", "for", "Big Data processing"])
+
+# Print out the type of the created object
+print("The type of RDD is",type(RDD))
+
+# Create a fileRDD from file_path
+fileRDD = sc.textFile(file_path)
+
+# Check the number of partitions in fileRDD
+print("Number of partitions in fileRDD is", fileRDD.getNumPartitions())
+
+# Create a fileRDD_part from file_path with 5 partitions
+fileRDD_part = sc.textFile(file_path, minPartitions = 5)
+-----
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+numbRDD = sc.parallelize(numbers)
+
+# Create map() transformation to cube numbers
+cubedRDD = numbRDD.map(lambda x: x**3)
+
+# Collect the results
+numbers_all = cubedRDD.collect()
+
+# Print the numbers from numbers_all
+for numb in numbers:
+    print(numbers_all)
+------	
+
+reduceByKey() which operates on key, value (k,v) pairs and merges the values for each key
+	# Apply reduceByKey() operation on Rdd
+	Rdd_Reduced = Rdd.reduceByKey(lambda x, y: x+y)
+
+	# Iterate over the result and print the output
+	for num in Rdd_Reduced.collect(): 
+	  print("Key {} has {} Counts".format(num[0], num[1]))
+	  
+------
+
+sortByKey()
+	# Sort the reduced RDD with the key by descending order
+	Rdd_Reduced_Sort = Rdd_Reduced.sortByKey(ascending=False)
+
+	# Iterate over the result and print the output
+	for num in Rdd_Reduced_Sort.collect():
+	  print("Key {} has {} Counts".format(num[0], num[1]))  
+	  
+------	  

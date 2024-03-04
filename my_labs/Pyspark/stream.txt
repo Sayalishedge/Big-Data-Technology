@@ -1,0 +1,59 @@
+./run.sh
+#!/bin/bash
+source unset_jupyter.sh
+spark-submit ./SparkStreamingFromDirectory.py
+
+1) From terminal 1 Run the Spark Streaming application(./run.sh)
+2) From terminal 2 copy the json file one at a time from home/talentum/test-jupyter/Spark-Structured-Streaming/zipcodes 
+to home/talentum/test-jupyter/Spark-Structured-Streaming/source
+3) For every copy of a json file in above step verify that a parquet file get generated at 
+hdfs://localhost:9000/user/talentum/tmp/datalake/FaresRaw. 
+
+
+similar to this i want to create a pyspark streaming application that does 
+1.ingest the covid data from a file say /tmp/inputDir into HDFS  
+2.the data should be copied into hdfs as soon as the file is copied into the input directory 
+3. the data should be copied in parquet format 
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import input_file_name
+from pyspark.sql.streaming import ProcessingTime
+
+# Create a Spark session
+spark = SparkSession.builder.appName("CovidDataStreamingApp").getOrCreate()
+
+# Set the input and output directories
+input_directory = "/tmp/inputDir"
+output_directory = "/tmp/outputDir"
+
+# Define the schema for the data
+# Replace the schema with the actual schema of your COVID data
+schema = "your_actual_schema_here"
+
+# Read streaming data from the input directory
+covid_data_stream = (
+    spark.readStream
+    .schema(schema)
+    .option("header", "true")  # Adjust options based on your data format
+    .csv(input_directory)
+    .withColumn("filename", input_file_name())  # Add the filename column
+)
+
+# Define the query to copy the data into HDFS and save it in Parquet format
+hdfs_copy_query = (
+    covid_data_stream
+    .writeStream
+    .trigger(ProcessingTime("10 seconds"))  # Adjust the trigger interval as needed
+    .outputMode("append")
+    .format("parquet")
+    .option("path", output_directory)
+    .option("checkpointLocation", "/tmp/checkpoint")  # Provide a checkpoint location
+    .start()
+)
+
+# Start the streaming query
+hdfs_copy_query.awaitTermination()
+
+Run
+spark-submit your_script_name.py
+

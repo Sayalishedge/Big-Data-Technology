@@ -1,0 +1,105 @@
+hbase shell
+-create table 'notifications','attributes','metrics'
+Every column should have at least 1 column family.
+
+PUT
+	Insert
+	-put 'notifications',2,'attributes:for_user','Chaz'
+						ROW				COLUMN 	  VALUE
+								KEY  			| VALUE
+	Update							
+	-put 'notifications',2,'metrics:open',0
+	-put 'notifications',2,'metrics:open',1
+
+Get
+	-get 'notifications',2
+	-get 'notifications',2,'metrics:open','attributes:type'
+	-get 'your_table_name', 'your_row_key', {COLUMN => 'cf3:col1'}
+	
+	Basic Get Command:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key'
+		This command retrieves all data for the specified row.
+
+	Get Data from a Specific Column:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {COLUMN => 'your_column_family:your_column'}
+		This command retrieves data only for the specified column within the specified column family.
+
+	Get Data with a Specific Timestamp:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {COLUMN => 'your_column_family:your_column', TIMESTAMP => your_timestamp}
+		This command retrieves data for the specified column at the given timestamp.
+
+	Get Data with a Specific Number of Versions:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {COLUMN => 'your_column_family:your_column', VERSIONS => your_number_of_versions}
+		This command retrieves the specified number of most recent versions of the data for the specified column.
+
+	Get Data with Specific Column Filters:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {FILTER => "your_filter_expression"}
+		This command retrieves data based on the specified filter expression. Filters can be used to include or exclude specific data based on various conditions.
+
+	Get Data with Column Range Filter:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {FILTER => "ColumnPrefixFilter('your_prefix')"}
+		This command retrieves data where the column name matches the specified prefix.
+
+	Get Data with Row Filter:
+
+		bash
+		Copy code
+		get 'your_table_name', 'your_row_key', {FILTER => "RowFilter(=, 'binary:your_value')"}
+		This command retrieves data where the row key matches the specified value.
+	
+	
+	
+	
+get operations only allow you to retrieve
+
+1 row id at a time
+value + timestamp is called a cell
+
+Scan
+	-scan 'notifications'
+	Returns all values from the notifications table
+	-scan 'notifications',{COLUMNS => ['attributes:for_use'],LIMIT => 1, STARTROW => "2"}
+
+Delete
+	-delete 'notifications',2,'attributes:for_user'
+
+Drop
+	-drop 'notifications'
+		ERROR: Table notifications is enabled. Disable it first.
+	-disable 'notifications'
+
+
+
+1]  Inserting data into a HBase table through a tool
+	1) Start Hbase shell
+	2) Create a Table 'driver_dangerous_event'  using following command on hbase shell
+	>>> create 'driver_dangerous_event','events'
+	3) From a linux command line put the data.csv in your home on hdfs
+	4) On a new linux command line give following command
+	>>> hbase org.apache.hadoop.hbase.mapreduce.ImportTsv -Dimporttsv.separator=,  -Dimporttsv.columns="HBASE_ROW_KEY,events:driverId,events:driverName,events:eventTime,events:eventType,events:latitude,events:longitude,events:routeId,events:routeName,events:truckId" driver_dangerous_event hdfs://localhost:9000/user/talentum/data.csv
+	5) Come to the hbase shell and scan the table
+
+	Code/Dataset
+	data/data.csv
+
+
+
+							

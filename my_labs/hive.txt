@@ -1,0 +1,275 @@
+-/user/hive/warehouse/
+-create table wh_visits (
+	lname string, fname string,
+	time_of_arrival string, appt_scheduled_time string, meeting_location string, info_comment string)
+
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' ;
+-dfs -put /root/hdp/pigandhive/labs/Lab7.1/names.txt /apps/hive/warehouse/names/;
+
+PARTITIONS
+	-create table names (id int, name string) 
+	partitioned by (state string) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' ;
+	-load data local inpath '/root/hdp/pigandhive/labs/demos/hivedata_ca.txt' 
+		overwrite into/into table names partition (state = 'CA');
+	-state='CO'
+	-state='SD'
+	- show partitions names;
+	-dfs -ls -R /user/hive/warehouse/names/; 
+			/apps/hive/warehouse/names/state=CA/hivedata_ca.txt
+			/apps/hive/warehouse/names/state=CO
+			/apps/hive/warehouse/names/state=CO/hivedata_co.txt
+			0
+			/apps/hive/warehouse/names/state=SD
+			6
+			/apps/hive/warehouse/names/state=SD/hivedata_sd.txt
+
+SKEW
+	set hive.mapred.supports.subdirectories=true;
+	set hive.optimize.listbucketing=true;
+	set mapred.input.dir.recursive=true;
+
+	drop table if exists salarydata;
+
+	create external table salarydata (
+			gender string,
+			age int,
+			salary double,
+			zip int
+	)
+	ROW FORMAT DELIMITED
+	FIELDS TERMINATED BY ','
+	LOCATION  '/user/root/salarydata/';
+
+
+	drop table if exists skew_demo;
+
+	create table skew_demo (
+			gender string,
+			age int,
+			salary double,
+			zip int
+	)
+	skewed by (zip) on (95102,94040) stored as directories;
+
+	insert overwrite table skew_demo
+	select gender,age,salary,zip from salarydata;
+
+NGRAM
+	bigram
+	-select explode(ngrams(sentences(line),2,15)) as x from constitution;
+
+	Let’s find the 20 most frequent words that follow “the”:
+	-select explode(context_ngrams(sentences(line), array("the",null),20)) as result
+		from constitution;
+
+Join the Datasets
+	join.hive
+
+	select * from nyse_data limit 20;
+
+	select * from dividends limit 20;
+
+	describe stock_aggregates;
+	OK	
+	symbol	string
+	year	string
+	high	float
+	low		float
+	average_close	float
+	total_dividends	float
+
+	2 ) Join the Datasets
+
+	-insert overwrite table stock_aggregates
+		The overwrite causes any existing data in stock_aggregates to be deleted.
+	-select a.symbol, year(a.trade_date), max(a.high), min(a.low), avg(a.close), sum(b.dividend)
+	-from nyse_data a
+	-left outer join dividends b
+	-on (a.symbol = b.symbol and a.trade_date = b.trade_date)
+	-group by a.symbol, year(a.trade_date);
+	-hive -f join.hive
+
+VIEW
+	-CREATE VIEW 2013_orders AS
+		SELECT orderid, order_date, username, itemlist FROM orders
+		WHERE year(order_date) = '2013';
+
+
+	-CREATE VIEW max_ordertotal AS
+		SELECT max(ordertotal) AS maxtotal, userid FROM orders 
+		GROUP BY userid;
+		
+	Now join the orders table with your max_ordertotal view:
+	SELECT ordertotal, orders.userid, itemlist FROM orders
+	JOIN max_ordertotal ON
+	max_ordertotal.userid = orders.userid
+	AND
+	max_ordertotal.maxtotal = orders.ordertotal 
+	ORDER BY orders.userid;
+
+	To aggregate the username values using the collect_set function
+	-SELECT sum(ordertotal), userid, collect_set(username)[0] FROM orders
+		GROUP BY userid;
+		
+	
+Hive File Formats
+• Text file
+• SequenceFile
+• RCFile
+• ORC File
+
+SERDE WITH IP AND OP FORMAT
+	CREATE TABLE emails (
+	from_field string,
+	sender string,
+	email_body string)
+	ROW FORMAT SERDE'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+	STORED AS INPUTFORMAT'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+	OUTPUTFORMAT'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+	TBLPROPERTIES (Talentum Global Technologies 'avro.schema.url'='hdfs//nn:8020/emailschema.avsc');
+
+Computing Table and Column Statistics
+		ANALYZE TABLE tablename COMPUTE STATISTICS;
+		ANALYZE TABLE tablename COMPUTE STATISTICS FOR COLUMNS column_name_1,column_name_2, ...
+		DESCRIBE FORMATTED tablename
+		DESCRIBE EXTENDED tablename
+	
+set hive.execution.engine=tez;
+
+Hive Optimization Tips
+	• Divide data amongst different files that can be pruned out by
+	using partitions, buckets, and skews
+	• Use the ORC file format
+	• Sort and Bucket on common join keys
+	• Use map (broadcast) joins whenever possible
+	• Increase the replication factor for hot data (which reduces
+	latency)
+	• Take advantage of Tez	
+	
+	
+WINDOW FUNCTION
+	-select order_date, sum(ordertotal)
+		FROM orders
+		GROUP BY order_date;
+	-SELECT order_date, sum(ordertotal)
+		OVER
+		(PARTITION BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+		FROM orders;
+
+	-SELECT order_date, ordertotal, rank()
+		OVER
+		(PARTITION BY order_date ORDER BY ordertotal)
+		FROM orders;
+		
+	The rank query by month:
+		SELECT substr(order_date,0,7), ordertotal, rank()
+		OVER
+		(PARTITION BY substr(order_date,0,7) ORDER BY ordertotal) FROM orders;
+
+HISTOGRAMS
+	-	 following Hive query, which uses the histogram_numeric function to compute 20 (x,y) pairs of the frequency distribution of the total order amount from customers who purchased a microwave (using the orders table):
+		-SELECT explode(histogram_numeric(ordertotal,20)) AS x FROM orders
+			WHERE itemlist LIKE "%Microwave%";
+	-	Hive query to compute 10 frequency-distribution pairs for the ordertotal from orders table where ordertotal is greater than $200.
+			-SELECT explode(histogram_numeric(ordertotal,10)) AS x FROM orders
+			 WHERE ordertotal > 200;
+
+
+
+EVAL4
+	ddl:
+		set hive.enforce.bucketing=true;
+		set hive.enforce.sorting=true;
+		set hive.strict.checks.bucketing=false;
+
+		drop table if exists hiredata;
+
+		create table hiredata(country String,city String,job_name String,salary double)
+		clustered by (city) into 3 buckets 
+		row format serde 'org.apache.hadoop.hive.serde2.OpenCSVSerde' 
+		TBLPROPERTIES("skip.header.line.count"="1");
+
+	load:
+		set hive.enforce.bucketing=true;
+		set hive.enforce.sorting=true;
+		set hive.strict.checks.bucketing=false;
+		load data local inpath '/home/cloudera/shared/files/eval4/hire_data/*.csv' into table hiredata;
+
+	query:
+		select * from hiredata where city='Berlin';
+
+
+	--With Partition--
+
+	-- Set Hive properties
+	SET hive.enforce.bucketing=true;
+	SET hive.enforce.sorting=true;
+	SET hive.strict.checks.bucketing=false;
+
+	-- Drop the table if it exists
+	DROP TABLE IF EXISTS hiredata;
+
+	-- Create a partitioned table
+	CREATE TABLE hiredata (
+	  city STRING,
+	  job_name STRING,
+	  salary DOUBLE
+	)
+	PARTITIONED BY (country string)
+	ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+	STORED AS TEXTFILE
+	TBLPROPERTIES ("skip.header.line.count"="1");
+
+	-- Load data into the hiredata table
+	LOAD DATA LOCAL INPATH '/home/cloudera/shared/files/eval4/hire_data/*.csv' 
+	INTO TABLE hiredata PARTITION (country='Berlin');
+
+
+	show partitions hiredata;
+	OK
+	country=Berlin
+	Time taken: 0.509 seconds, Fetched: 1 row(s)
+	hive> dfs -ls /user/hive/warehouse/hiredata
+		> ;
+	Found 1 items
+	drwxrwxrwx   - cloudera supergroup          0 2023-12-04 02:15 /user/hive/warehouse/hiredata/country=Berlin
+
+	SELECT * FROM hiredata WHERE country='Germany';
+	SELECT country, AVG(salary) as avg_salary FROM hiredata GROUP BY country;
+	SELECT * FROM hiredata WHERE country='Germany' AND city='Berlin';
+	Count the number of records in each partition:
+		SELECT country, COUNT(*) as record_count FROM hiredata GROUP BY country;
+	SELECT hiredata.*, other_table.some_column
+		FROM hiredata
+		JOIN other_table ON hiredata.country = other_table.country;
+
+
+EVAL5
+	DROP TABLE IF EXISTS Startups;
+	CREATE TABLE Startups (
+		startup_name STRING,
+		founder_name STRING,
+		sector STRING,
+		state STRING,
+		year_founded INT
+	) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES (
+		"separatorChar" = ",",
+		"quoteChar"     = "\""
+	)STORED AS TEXTFILE TBLPROPERTIES ("skip.header.line.count"="1");
+
+	LOAD DATA LOCAL INPATH '/home/cloudera/hdp/pigandhive/labs/evaluation/eval5/Listofstartups.csv' 
+	OVERWRITE INTO TABLE Startups;
+
+
+	SELECT sector, COUNT(*) AS max_startups
+	FROM Startups
+	GROUP BY sector
+	ORDER BY max_startups DESC
+	LIMIT 1;
+
+
+	SELECT state, COUNT(*) AS max_startups
+	FROM Startups
+	GROUP BY state
+	ORDER BY max_startups DESC
+	LIMIT 1;

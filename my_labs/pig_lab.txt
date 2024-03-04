@@ -1,0 +1,25 @@
+Starts grunt shell
+	-pig
+Notice you can run HDFS commands easily from the Grunt shell
+	-ls
+	-copyFromLocal /root/hdp/pigandhive/labs/demos/pigdemo.txt demos/
+	-ls	
+	-pwd
+	-cd demos
+	-employees = LOAD 'pigdemo.txt' AS (state, name);
+	-dump employees;
+	
+	FILTER
+	-ca_only = FILTER employees BY (state=='CA'); 
+	-DUMP ca_only;
+	
+	GROUP
+	- emp_group = GROUP employees BY state;
+
+	
+	
+	
+	
+	
+
+	

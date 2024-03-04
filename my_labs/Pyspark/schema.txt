@@ -1,0 +1,16 @@
+Schema
+
+	from pyspark.sql.types import *
+	
+	peopleSchema = StructType([
+	# Define the name field
+	StructField('name', StringType(), True),
+	# Add the age field
+	StructField('age', IntegerType(), True),
+	# Add the city field
+	StructField('city', StringType(), True)
+	])
+	
+	people_df = spark.read.format('csv').load(name='rawdata.csv', schema=peopleSchema)
+	
+
